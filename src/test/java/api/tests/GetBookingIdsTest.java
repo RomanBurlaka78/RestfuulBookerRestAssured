@@ -46,6 +46,23 @@ public class GetBookingIdsTest {
         assertThat(response.getFirstname().matches("Jim"));
 
     }
+    @Test
+    public void testGetBookingId2() {
+        GetBookingDates response = given()
+                .filter(new AllureRestAssured())
+                .log().all()
+                .when()
+                .accept("application/json")
+                .contentType(ContentType.JSON)
+                .get("https://restful-booker.herokuapp.com/booking/2")
+                .then().log().all()
+                .statusCode(200)
+                .extract().as(GetBookingDates.class);
+
+        assertThat(!response.getFirstname().isEmpty());
+        assertThat(response.getLastname().equalsIgnoreCase("Wilson"));
+
+    }
 
 
 
