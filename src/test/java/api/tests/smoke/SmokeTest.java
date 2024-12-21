@@ -2,25 +2,26 @@ package api.tests.smoke;
 
 import api.pojo.GetBookingDates;
 import api.pojo.GetToken;
+import api.tests.base.BaseTest;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.testng.Assert;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SmokeTest {
-    final String TOKEN = "{\n" +
+public class SmokeTest extends BaseTest {
+    final static String TOKEN = "{\n" +
             "    \"username\" : \"admin\",\n" +
             "    \"password\" : \"password123\"\n" +
             "}";
+
     final String CREATE_BOOKING = "{\n" +
-            "    \"firstname\" : \"Jim\",\n" +
-            "    \"lastname\" : \"Brown\",\n" +
+            "    \"firstname\" : \"" + getFirstName()  +"\",\n" +
+            "    \"lastname\" : \"" + getLastName() + "\",\n" +
             "    \"totalprice\" : 111,\n" +
             "    \"depositpaid\" : true,\n" +
             "    \"bookingdates\" : {\n" +
@@ -30,8 +31,8 @@ public class SmokeTest {
             "    \"additionalneeds\" : \"Breakfast\"\n" +
             "}";
     final String UPDATE_BOOKING = "{\n" +
-            "    \"firstname\" : \"Roman\",\n" +
-            "    \"lastname\" : \"Burlaka\",\n" +
+            "    \"firstname\" : \"" + firstName + "\",\n" +
+            "    \"lastname\" : \"" + lastName  +"\",\n" +
             "    \"totalprice\" : 1122,\n" +
             "    \"depositpaid\" : true,\n" +
             "    \"bookingdates\" : {\n" +
@@ -41,25 +42,46 @@ public class SmokeTest {
             "    \"additionalneeds\" : \"Alll\"\n" +
             "}";
 
-    @Test
+    GetToken token = given()
+            .filter(new AllureRestAssured())
+            .log().all()
+            .contentType(ContentType.JSON)
+            .body(TOKEN)
+            .post("https://restful-booker.herokuapp.com/auth")
+            .then()
+            .log().all()
+            .extract().as(GetToken.class);
+
+    GetBookingDates createBooking = given()
+            .filter(new AllureRestAssured())
+            .log().all()
+            .contentType(ContentType.JSON)
+            .accept("application/json")
+            .when()
+            .body(CREATE_BOOKING)
+            .post(" https://restful-booker.herokuapp.com/booking")
+            .then().log().all()
+            .statusCode(200)
+            .extract().as(GetBookingDates.class);
+
+
+    @Test(groups = {"positive"})
     public void testGetAllBooking() {
         Response response = given()
-                .log().all()
-                .get("https://restful-booker.herokuapp.com/booking")
+                .get("/booking")
                 .then().log().all()
                 .statusCode(200)
                 .extract().response();
-        System.out.println(response.asString());
+
 
         Assert.assertEquals(response.asString().contains("bookingid"), true);
 
     }
 
-    @Test
+
+    @Test(groups = {"positive"})
     public void testGetBookingUser() {
         GetBookingDates response = given()
-                .log().all()
-                .accept("application/json")
                 .when()
                 .get("https://restful-booker.herokuapp.com/booking/1")
                 .then()
@@ -71,11 +93,9 @@ public class SmokeTest {
 
     }
 
-    @Test
+    @Test(groups = {"positive"})
     public void testCreatePost() {
-        GetBookingDates response = given()
-                .log().all()
-                .contentType(ContentType.JSON)
+        GetBookingDates createBooking = given()
                 .accept("application/json")
                 .when()
                 .body(CREATE_BOOKING)
@@ -83,19 +103,17 @@ public class SmokeTest {
                 .then().log().all()
                 .statusCode(200)
                 .extract().as(GetBookingDates.class);
-        System.out.println("BookingId : " + response.getBookingid());
-        assertThat(response.getFirstname() == "Jim");
-        assertThat(response.getLastname() == "Brown");
+
+        assertThat(createBooking.getFirstname() == firstName);
+        assertThat(createBooking.getLastname() == lastName);
 
 
     }
 
-    @Test
-    public void testGetToken() {
+    @Test(groups = {"positive"})
+    public String testGetToken() {
         GetToken token = given()
                 .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
                 .body(TOKEN)
                 .filter(new AllureRestAssured())
                 .post("https://restful-booker.herokuapp.com/auth")
@@ -104,38 +122,18 @@ public class SmokeTest {
                 .extract().as(GetToken.class);
 
         assertThat(!token.getToken().isEmpty());
+
+        return token.getToken();
+
+
     }
 
-    @Test
+    @Test()
     public void testUpdate() {
-        GetToken token = given()
-                .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(TOKEN)
-                .post("https://restful-booker.herokuapp.com/auth")
-                .then()
-                .log().all()
-                .extract().as(GetToken.class);
-
-        GetBookingDates createBooking = given()
-                .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept("application/json")
-                .when()
-                .body(CREATE_BOOKING)
-                .post(" https://restful-booker.herokuapp.com/booking")
-                .then().log().all()
-                .statusCode(200)
-                .extract().as(GetBookingDates.class);
-
 
         GetBookingDates updateBookingPut = given()
                 .filter(new AllureRestAssured())
                 .log().all()
-                .contentType(ContentType.JSON)
-                .accept("application/json")
                 .cookies("token", token.getToken())
                 .when()
                 .body(UPDATE_BOOKING)
@@ -144,46 +142,20 @@ public class SmokeTest {
                 .statusCode(200)
                 .extract().as(GetBookingDates.class);
 
-        assertThat(updateBookingPut.getFirstname() == "Roman");
+        assertThat(updateBookingPut.getFirstname().matches(firstName));
         assertThat(updateBookingPut.getBookingid() == createBooking.getBookingid());
 
 
     }
 
-    @Test
+    @Test(groups = {"positive"})
     public void testDeleteBooking() {
-        GetToken tokenBooking = given()
-                .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(TOKEN)
-                .post("https://restful-booker.herokuapp.com/auth")
-                .then()
-                .log().all()
-                .extract().as(GetToken.class);
 
-        assertThat(!tokenBooking.getToken().isEmpty());
-
-        GetBookingDates createBooking = given()
-                .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
-                .accept("application/json")
-                .when()
-                .body(CREATE_BOOKING)
-                .post(" https://restful-booker.herokuapp.com/booking")
-                .then().log().all()
-                .statusCode(200)
-                .extract().as(GetBookingDates.class);
-
-        assertThat(createBooking.getBookingid().intValue());
 
         Response delete = given()
                 .filter(new AllureRestAssured())
-                .log().all()
-                .contentType(ContentType.JSON)
                 .accept("application/json")
-                .cookies("token", tokenBooking.getToken())
+                .cookies("token", token.getToken())
                 .when()
                 .delete("https://restful-booker.herokuapp.com/booking/" + createBooking.getBookingid())
                 .then().log().all()
@@ -192,4 +164,7 @@ public class SmokeTest {
         assertThat(delete.statusCode() == 201);
 
     }
+
+
+
 }

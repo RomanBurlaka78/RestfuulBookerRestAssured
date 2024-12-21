@@ -2,7 +2,7 @@
 # This is project for testing [API](https://restful-booker.herokuapp.com/apidoc/index.html#api-Booking-GetBookings) using   RestAssured.
 
 ###  Project stack:
-* rest-assured
+*  rest-assured
 *  json-path
 *  jackson-core
 *  jackson-databind
@@ -10,6 +10,12 @@
 *  assertj-core
 *  allure-testng
 *  testng
+
+### In project were used:
+* POJO classes
+* RequestSpecBuilder
+* Inheritance -> BaseTest
+* Patterns 
 
 
 
